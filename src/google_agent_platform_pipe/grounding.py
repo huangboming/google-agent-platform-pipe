@@ -19,9 +19,7 @@ def grounding_events(metadata: dict) -> List[Dict[str, Any]]:
                 "data": {
                     "source": {"name": title, "id": uri, "url": uri},
                     "document": [document],
-                    "metadata": [
-                        {"source": uri, "name": title, "url": uri}
-                    ],
+                    "metadata": [{"source": uri, "name": title, "url": uri}],
                 },
             }
         )

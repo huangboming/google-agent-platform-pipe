@@ -3,7 +3,6 @@ import base64
 import mimetypes
 from pathlib import Path
 
-
 _SUPPORTED_MIME_TYPES = {
     "application/pdf",
     "audio/mp3",
@@ -88,9 +87,7 @@ async def uploaded_file_parts(files: list, max_bytes: int):
 
         path_text = str(path_value)
         if path_text.startswith("gs://"):
-            parts.append(
-                {"fileData": {"mimeType": mime_type, "fileUri": path_text}}
-            )
+            parts.append({"fileData": {"mimeType": mime_type, "fileUri": path_text}})
             continue
 
         path = Path(path_value)

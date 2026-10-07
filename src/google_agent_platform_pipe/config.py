@@ -14,10 +14,7 @@ class Valves(BaseModel):
         description="Google Agent Platform API base URL.",
     )
     MODELS: str = Field(
-        default=(
-            "gemini-3.8-flash,gemini-3.5-flash-lite,"
-            "gemini-3.1-pro-preview"
-        ),
+        default=("gemini-3.8-flash,gemini-3.5-flash-lite,gemini-3.1-pro-preview"),
         description="Comma-separated Agent Platform model IDs.",
     )
     INCLUDE_THOUGHTS: bool = Field(

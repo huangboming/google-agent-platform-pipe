@@ -13,7 +13,6 @@ from .models import parse_models, select_model
 from .responses import collect_openai_response, stream_openai_response
 from .tools import tool_declarations
 
-
 _OPEN_WEBUI_SEARCH_TOOLS = {"search_web", "fetch_url"}
 _OPEN_WEBUI_FILE_TOOLS = {
     "grep_chat_files",
@@ -23,11 +22,11 @@ _OPEN_WEBUI_FILE_TOOLS = {
 }
 
 
-def native_google_search_enabled(
-    metadata: Optional[dict], task: Optional[str]
-) -> bool:
+def native_google_search_enabled(metadata: Optional[dict], task: Optional[str]) -> bool:
     features = metadata.get("features", {}) if isinstance(metadata, dict) else {}
-    return not task and isinstance(features, dict) and features.get("web_search") is True
+    return (
+        not task and isinstance(features, dict) and features.get("web_search") is True
+    )
 
 
 def tools_for_request(
@@ -83,8 +82,7 @@ class Pipe:
 
     def pipes(self) -> List[Dict[str, str]]:
         return [
-            {"id": model, "name": model}
-            for model in parse_models(self.valves.MODELS)
+            {"id": model, "name": model} for model in parse_models(self.valves.MODELS)
         ]
 
     async def pipe(
@@ -143,9 +141,7 @@ class Pipe:
         contents = []
         system_parts = []
         max_inline_bytes = self.valves.MAX_INLINE_MEDIA_MB * 1024 * 1024
-        file_parts, inline_bytes = await uploaded_file_parts(
-            files, max_inline_bytes
-        )
+        file_parts, inline_bytes = await uploaded_file_parts(files, max_inline_bytes)
         messages = body.get("messages", [])
         if file_parts:
             messages = restore_pre_source_messages(messages, metadata)
@@ -161,9 +157,7 @@ class Pipe:
                 continue
 
             gemini_role = "model" if role == "assistant" else "user"
-            contents.append(
-                {"role": gemini_role, "parts": parts or [{"text": ""}]}
-            )
+            contents.append({"role": gemini_role, "parts": parts or [{"text": ""}]})
 
         if file_parts:
             for content in reversed(contents):

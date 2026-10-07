@@ -1,7 +1,6 @@
 import re
 from typing import List
 
-
 _MODEL_ID_PATTERN = re.compile(r"[A-Za-z0-9._-]+")
 
 

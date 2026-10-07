@@ -2,7 +2,6 @@ import time
 import uuid
 from typing import Any, AsyncIterator, Dict
 
-
 _USAGE_FIELDS = (
     "promptTokenCount",
     "candidatesTokenCount",

@@ -132,17 +132,23 @@ ADC, service accounts, Google SDKs, or ADK.
 src/google_agent_platform_pipe/ source package
 dist/google_agent_platform.py   generated Open WebUI Function
 scripts/build.py                 deterministic single-file builder
-tests/                           behavior contract tests
+tests/                           pytest behavior contracts by feature
+pyproject.toml                   uv, pytest, and Ruff configuration
 ```
 
 > `src/google_agent_platform_pipe/` is the source of truth. Do not edit `dist/`
 > directly.
 
 ```bash
-python3 scripts/build.py
-python3 -m unittest discover -s tests -v
-python3 scripts/build.py --check
+uv sync
+uv run python scripts/build.py
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+uv run python scripts/build.py --check
 ```
 
-The same behavior contract runs against the source package and generated
-single-file Function. Tests make no external API calls.
+The same pytest behavior contract runs against the source package and generated
+single-file Function. Tests make no external API calls. The committed `uv.lock`
+pins the development environment; it does not add dependencies to the deployed
+single-file Function.

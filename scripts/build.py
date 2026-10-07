@@ -4,12 +4,15 @@
 import argparse
 import ast
 import hashlib
+import tomllib
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_DIR = ROOT / "src" / "google_agent_platform_pipe"
 OUTPUT = ROOT / "dist" / "google_agent_platform.py"
+PROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))[
+    "project"
+]
 MODULES = (
     "config.py",
     "models.py",
@@ -22,9 +25,9 @@ MODULES = (
     "agent.py",
     "pipe.py",
 )
-PLUGIN_HEADER = '''"""
+PLUGIN_HEADER = f'''"""
 title: Google Agent Platform
-version: 0.4.1
+version: {PROJECT["version"]}
 description: Native Google Agent Platform models with streaming, original-file input, Google Search, reasoning, usage, and tool calling.
 """
 '''
@@ -49,7 +52,9 @@ def module_body(path: Path) -> str:
 
 def build_content() -> str:
     sources = [(name, (SOURCE_DIR / name).read_bytes()) for name in MODULES]
-    digest = hashlib.sha256(b"".join(content for _, content in sources)).hexdigest()[:12]
+    digest = hashlib.sha256(b"".join(content for _, content in sources)).hexdigest()[
+        :12
+    ]
     sections = [
         PLUGIN_HEADER.rstrip(),
         "",
@@ -57,7 +62,9 @@ def build_content() -> str:
         f"# Source digest: {digest}",
     ]
     for name, _ in sources:
-        sections.extend(("", f"# --- {name} ---", "", module_body(SOURCE_DIR / name).rstrip()))
+        sections.extend(
+            ("", f"# --- {name} ---", "", module_body(SOURCE_DIR / name).rstrip())
+        )
     content = "\n".join(sections) + "\n"
     compile(content, str(OUTPUT), "exec")
     return content

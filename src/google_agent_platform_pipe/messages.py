@@ -4,7 +4,6 @@ import copy
 import re
 from typing import Any, Dict
 
-
 _DATA_URL_PATTERN = re.compile(
     r"data:([^;,]+);base64,(.*)", flags=re.IGNORECASE | re.DOTALL
 )
@@ -105,9 +104,7 @@ def restore_pre_source_messages(messages: list, metadata: Any) -> list:
             message for message in restored if message.get("role") != "system"
         ]
         if original_system:
-            without_system.insert(
-                0, {"role": "system", "content": original_system}
-            )
+            without_system.insert(0, {"role": "system", "content": original_system})
         restored = without_system
 
     return restored

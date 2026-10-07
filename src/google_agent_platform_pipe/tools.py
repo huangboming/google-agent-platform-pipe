@@ -3,7 +3,6 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel
 
-
 _SCHEMA_FIELDS = {
     "type",
     "format",
