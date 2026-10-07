@@ -1,0 +1,89 @@
+# Google Agent Platform Pipe for Open WebUI
+
+A lightweight [Open WebUI Pipe](https://docs.openwebui.com/features/extensibility/plugin/functions/pipe/)
+for Google Agent Platform models.
+
+It provides streaming, multimodal input, and native Open WebUI tool calling as
+a single deployable Python file—with no additional runtime dependencies.
+
+## Features
+
+- Asynchronous SSE streaming
+- Text, image, audio, video, PDF, and `gs://` input
+- Parallel and multi-turn Open WebUI tool calls
+- Gemini thought-signature preservation across tool turns
+- Text and inline media output
+- Configurable Gemini thinking level
+- Agent Platform API-key authentication
+
+## Quick start
+
+You need a [Google Agent Platform API key](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/start/api-keys).
+
+1. In Open WebUI, go to **Admin Panel → Functions**.
+2. Import [`dist/google_agent_platform.py`](./dist/google_agent_platform.py), or
+   paste it into a new Function.
+3. Save and enable the Function.
+4. Set its `GOOGLE_API_KEY` Valve.
+5. Start a chat with a model under `Google/`.
+
+## Default models
+
+- `gemini-3.8-flash`
+- `gemini-3.5-flash-lite`
+- `gemini-3.1-pro-preview` — preview
+
+The Pipe uses explicit model IDs because Google's `*-latest` selectors can return
+404 when an API key routes through a regional location such as `us-central1`.
+You can replace the defaults through the `MODELS` Valve. Available models depend
+on your Agent Platform project and region.
+
+> After updating an existing Function, check `MODELS`: Open WebUI may retain its
+> previously saved Valve value.
+
+## Configuration
+
+| Valve | Default | Description |
+| --- | --- | --- |
+| `GOOGLE_API_KEY` | — | Agent Platform API key; required |
+| `MODELS` | See above | Comma-separated model IDs exposed in Open WebUI |
+| `THINKING_LEVEL` | Empty | `MINIMAL`, `LOW`, `MEDIUM`, or `HIGH` |
+| `MAX_TOOL_ITERATIONS` | `8` | Maximum model/tool round trips |
+| `REQUEST_TIMEOUT_SECONDS` | `300` | Upstream request timeout |
+| `MAX_INLINE_MEDIA_MB` | `18` | Total decoded inline-media limit per request |
+| `API_BASE_URL` | `https://aiplatform.googleapis.com` | Agent Platform API endpoint |
+
+## Multimodal input
+
+- Message data URLs are sent as Gemini `inlineData`.
+- Open WebUI uploads are read server-side and sent as `inlineData`.
+- `gs://` objects are sent as Gemini `fileData`.
+- Arbitrary HTTP media URLs are not downloaded, avoiding a server-side request
+  forgery surface.
+
+## Scope
+
+This project targets only Google Agent Platform at `aiplatform.googleapis.com` using
+an Agent Platform API key. The MVP does not support the Gemini Developer API,
+ADC, service accounts, Google SDKs, or ADK.
+
+## Development
+
+```text
+src/google_agent_platform_pipe/ source package
+dist/google_agent_platform.py   generated Open WebUI Function
+scripts/build.py                 deterministic single-file builder
+tests/                           behavior contract tests
+```
+
+> `src/google_agent_platform_pipe/` is the source of truth. Do not edit `dist/`
+> directly.
+
+```bash
+python3 scripts/build.py
+python3 -m unittest discover -s tests -v
+python3 scripts/build.py --check
+```
+
+The same behavior contract runs against the source package and generated
+single-file Function. Tests make no external API calls.
