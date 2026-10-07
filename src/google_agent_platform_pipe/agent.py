@@ -1,6 +1,7 @@
 import asyncio
 from typing import AsyncIterator, Callable, Dict, Any
 
+from .responses import add_usage_metadata
 from .tools import execute_tool
 
 
@@ -11,31 +12,44 @@ async def run_agent(
     max_tool_iterations: int,
     event_emitter,
     stream_generate: Callable,
-) -> AsyncIterator[str]:
+) -> AsyncIterator[Dict[str, Any]]:
+    usage_metadata = {}
+
     for iteration in range(max_tool_iterations):
         model_parts = []
         function_calls = []
         prompt_feedback = None
+        round_usage = {}
 
         async for response in stream_generate(model, payload):
             if response.get("promptFeedback"):
                 prompt_feedback = response["promptFeedback"]
+            if isinstance(response.get("usageMetadata"), dict):
+                round_usage.update(response["usageMetadata"])
+
             candidates = response.get("candidates") or []
             if not candidates:
                 continue
             for part in (candidates[0].get("content") or {}).get("parts", []):
                 model_parts.append(part)
-                if "text" in part and not part.get("thought"):
-                    yield part["text"]
+                if "text" in part:
+                    event_type = "reasoning" if part.get("thought") else "content"
+                    yield {"type": event_type, "text": part["text"]}
                 elif "inlineData" in part:
-                    yield _render_inline_data(part["inlineData"])
+                    yield {
+                        "type": "content",
+                        "text": _render_inline_data(part["inlineData"]),
+                    }
                 if "functionCall" in part:
                     function_calls.append(part["functionCall"])
 
+        usage_metadata = add_usage_metadata(usage_metadata, round_usage)
         if not function_calls:
             if not model_parts and prompt_feedback:
                 reason = prompt_feedback.get("blockReason", "unknown reason")
                 raise RuntimeError(f"Agent Platform blocked the prompt: {reason}")
+            if usage_metadata:
+                yield {"type": "usage", "metadata": usage_metadata}
             return
 
         if iteration + 1 >= max_tool_iterations:

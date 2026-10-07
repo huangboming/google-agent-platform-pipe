@@ -68,7 +68,9 @@ def message_parts(content: Any):
     return parts, used_bytes
 
 
-def generation_config(body: dict, thinking_level: str) -> Dict[str, Any]:
+def generation_config(
+    body: dict, thinking_level: str, include_thoughts: bool
+) -> Dict[str, Any]:
     config = {}
     mappings = {
         "temperature": "temperature",
@@ -89,10 +91,16 @@ def generation_config(body: dict, thinking_level: str) -> Dict[str, Any]:
         config["stopSequences"] = [stop] if isinstance(stop, str) else stop
 
     thinking_level = thinking_level.strip().upper()
+    if thinking_level and thinking_level not in _THINKING_LEVELS:
+        raise ValueError(
+            "THINKING_LEVEL must be MINIMAL, LOW, MEDIUM, HIGH, or empty."
+        )
+
+    thinking_config = {}
     if thinking_level:
-        if thinking_level not in _THINKING_LEVELS:
-            raise ValueError(
-                "THINKING_LEVEL must be MINIMAL, LOW, MEDIUM, HIGH, or empty."
-            )
-        config["thinkingConfig"] = {"thinkingLevel": thinking_level}
+        thinking_config["thinkingLevel"] = thinking_level
+    if include_thoughts:
+        thinking_config["includeThoughts"] = True
+    if thinking_config:
+        config["thinkingConfig"] = thinking_config
     return config

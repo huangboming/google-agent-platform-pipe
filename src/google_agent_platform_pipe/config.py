@@ -20,6 +20,10 @@ class Valves(BaseModel):
         ),
         description="Comma-separated Agent Platform model IDs.",
     )
+    INCLUDE_THOUGHTS: bool = Field(
+        default=True,
+        description="Show available Gemini thought summaries in Open WebUI.",
+    )
     THINKING_LEVEL: str = Field(
         default="",
         description="Optional Gemini thinking level: MINIMAL, LOW, MEDIUM, or HIGH.",

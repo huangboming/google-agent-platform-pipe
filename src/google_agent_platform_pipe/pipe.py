@@ -6,6 +6,7 @@ from .config import Valves
 from .files import ensure_media_limit, uploaded_file_parts
 from .messages import generation_config, message_parts
 from .models import parse_models, select_model
+from .responses import collect_openai_response, stream_openai_response
 from .tools import tool_declarations
 
 
@@ -58,10 +59,8 @@ class Pipe:
             stream_generate,
         )
         if body.get("stream", False):
-            return output
-
-        chunks = [chunk async for chunk in output]
-        return "".join(chunks)
+            return stream_openai_response(output, model)
+        return await collect_openai_response(output, model)
 
     async def _build_request(
         self, body: dict, tools: dict, files: list
@@ -106,7 +105,9 @@ class Pipe:
         if system_parts:
             payload["systemInstruction"] = {"parts": system_parts}
 
-        config = generation_config(body, self.valves.THINKING_LEVEL)
+        config = generation_config(
+            body, self.valves.THINKING_LEVEL, self.valves.INCLUDE_THOUGHTS
+        )
         if config:
             payload["generationConfig"] = config
 

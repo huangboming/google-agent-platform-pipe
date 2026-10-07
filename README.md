@@ -11,6 +11,7 @@ a single deployable Python file—with no additional runtime dependencies.
 - Asynchronous SSE streaming
 - Text, image, audio, video, PDF, and `gs://` input
 - Parallel and multi-turn Open WebUI tool calls
+- Collapsible Gemini thought summaries and token-usage reporting
 - Gemini thought-signature preservation across tool turns
 - Text and inline media output
 - Configurable Gemini thinking level
@@ -47,11 +48,17 @@ on your Agent Platform project and region.
 | --- | --- | --- |
 | `GOOGLE_API_KEY` | — | Agent Platform API key; required |
 | `MODELS` | See above | Comma-separated model IDs exposed in Open WebUI |
+| `INCLUDE_THOUGHTS` | `true` | Show available thought summaries in Open WebUI |
 | `THINKING_LEVEL` | Empty | `MINIMAL`, `LOW`, `MEDIUM`, or `HIGH` |
 | `MAX_TOOL_ITERATIONS` | `8` | Maximum model/tool round trips |
 | `REQUEST_TIMEOUT_SECONDS` | `300` | Upstream request timeout |
 | `MAX_INLINE_MEDIA_MB` | `18` | Total decoded inline-media limit per request |
 | `API_BASE_URL` | `https://aiplatform.googleapis.com` | Agent Platform API endpoint |
+
+Google exposes thought summaries rather than a model's raw chain of thought, and
+only when available. Open WebUI stores returned summaries in the chat history.
+Reported token usage includes all internal model calls made during a multi-turn
+tool loop.
 
 ## Multimodal input
 
