@@ -1,6 +1,7 @@
 import asyncio
 from typing import AsyncIterator, Callable, Dict, Any
 
+from .grounding import emit_grounding
 from .responses import add_usage_metadata
 from .tools import execute_tool
 
@@ -19,6 +20,7 @@ async def run_agent(
         model_parts = []
         function_calls = []
         prompt_feedback = None
+        grounding_metadata = {}
         round_usage = {}
 
         async for response in stream_generate(model, payload):
@@ -30,7 +32,10 @@ async def run_agent(
             candidates = response.get("candidates") or []
             if not candidates:
                 continue
-            for part in (candidates[0].get("content") or {}).get("parts", []):
+            candidate = candidates[0]
+            if isinstance(candidate.get("groundingMetadata"), dict):
+                grounding_metadata = candidate["groundingMetadata"]
+            for part in (candidate.get("content") or {}).get("parts", []):
                 model_parts.append(part)
                 if "text" in part:
                     event_type = "reasoning" if part.get("thought") else "content"
@@ -48,6 +53,7 @@ async def run_agent(
             if not model_parts and prompt_feedback:
                 reason = prompt_feedback.get("blockReason", "unknown reason")
                 raise RuntimeError(f"Agent Platform blocked the prompt: {reason}")
+            await emit_grounding(grounding_metadata, event_emitter)
             if usage_metadata:
                 yield {"type": "usage", "metadata": usage_metadata}
             return

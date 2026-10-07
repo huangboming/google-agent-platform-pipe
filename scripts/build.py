@@ -18,13 +18,14 @@ MODULES = (
     "tools.py",
     "client.py",
     "responses.py",
+    "grounding.py",
     "agent.py",
     "pipe.py",
 )
 PLUGIN_HEADER = '''"""
 title: Google Agent Platform
-version: 0.2.0
-description: Native Google Agent Platform models with streaming, thought summaries, token usage, multimodal input, and tool calling.
+version: 0.3.0
+description: Native Google Agent Platform models with streaming, Google Search, multimodal input, reasoning, usage, and tool calling.
 """
 '''
 

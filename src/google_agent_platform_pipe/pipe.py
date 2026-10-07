@@ -10,6 +10,42 @@ from .responses import collect_openai_response, stream_openai_response
 from .tools import tool_declarations
 
 
+_OPEN_WEBUI_SEARCH_TOOLS = {"search_web", "fetch_url"}
+
+
+def native_google_search_enabled(
+    metadata: Optional[dict], task: Optional[str]
+) -> bool:
+    features = metadata.get("features", {}) if isinstance(metadata, dict) else {}
+    return not task and isinstance(features, dict) and features.get("web_search") is True
+
+
+def tools_for_request(tools: dict, google_search: bool, internal_task: bool) -> dict:
+    if not google_search and not internal_task:
+        return tools
+
+    without_open_webui_search = {
+        name: tool
+        for name, tool in tools.items()
+        if name not in _OPEN_WEBUI_SEARCH_TOOLS
+    }
+    if internal_task:
+        return without_open_webui_search
+
+    remaining = {
+        name: tool
+        for name, tool in without_open_webui_search.items()
+        if not isinstance(tool, dict) or tool.get("type") != "builtin"
+    }
+    if remaining:
+        names = ", ".join(sorted(remaining))
+        raise ValueError(
+            "Gemini native Google Search cannot be combined with other tools: "
+            f"{names}. Disable the selected tools or turn off Web Search."
+        )
+    return {}
+
+
 class Pipe:
     """Open WebUI manifold pipe for the Google Agent Platform Model API."""
 
@@ -32,13 +68,18 @@ class Pipe:
         __tools__: Optional[dict] = None,
         __files__: Optional[list] = None,
         __event_emitter__=None,
+        __metadata__: Optional[dict] = None,
+        __task__: Optional[str] = None,
     ):
         if not self.valves.GOOGLE_API_KEY.strip():
             raise ValueError("Google Agent Platform API key is not configured.")
 
-        tools = __tools__ or {}
+        google_search = native_google_search_enabled(__metadata__, __task__)
+        tools = tools_for_request(__tools__ or {}, google_search, bool(__task__))
         model = select_model(body.get("model", ""), parse_models(self.valves.MODELS))
-        payload = await self._build_request(body, tools, __files__ or [])
+        payload = await self._build_request(
+            body, tools, __files__ or [], google_search
+        )
 
         async def stream_generate(selected_model, request):
             async for response in self.client.stream_generate(
@@ -63,7 +104,7 @@ class Pipe:
         return await collect_openai_response(output, model)
 
     async def _build_request(
-        self, body: dict, tools: dict, files: list
+        self, body: dict, tools: dict, files: list, google_search: bool
     ) -> Dict[str, Any]:
         contents = []
         system_parts = []
@@ -111,7 +152,10 @@ class Pipe:
         if config:
             payload["generationConfig"] = config
 
-        declarations = tool_declarations(tools)
-        if declarations:
-            payload["tools"] = [{"functionDeclarations": declarations}]
+        if google_search:
+            payload["tools"] = [{"googleSearch": {}}]
+        else:
+            declarations = tool_declarations(tools)
+            if declarations:
+                payload["tools"] = [{"functionDeclarations": declarations}]
         return payload

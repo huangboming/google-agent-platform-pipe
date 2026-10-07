@@ -11,6 +11,7 @@ a single deployable Python file—with no additional runtime dependencies.
 - Asynchronous SSE streaming
 - Text, image, audio, video, PDF, and `gs://` input
 - Parallel and multi-turn Open WebUI tool calls
+- Gemini-native Google Search with citations and Search Suggestions
 - Collapsible Gemini thought summaries and token-usage reporting
 - Gemini thought-signature preservation across tool turns
 - Text and inline media output
@@ -59,6 +60,22 @@ Google exposes thought summaries rather than a model's raw chain of thought, and
 only when available. Open WebUI stores returned summaries in the chat history.
 Reported token usage includes all internal model calls made during a multi-turn
 tool loop.
+
+## Native Google Search
+
+The Pipe uses Open WebUI's per-chat **Web Search** toggle to enable Agent
+Platform's native `googleSearch` tool. Enable Web Search globally in Open WebUI,
+ensure the model allows the Web Search capability, and use Native function
+calling. The Pipe reads the toggle directly; Open WebUI's configured search
+provider is not called.
+
+Grounded responses include Open WebUI source cards and Google's Search
+Suggestions widget. Internal tasks such as title generation never search.
+
+Agent Platform does not allow `googleSearch` and function declarations in the
+same request. When Web Search is on, Open WebUI's automatically injected
+built-in tools are omitted and `googleSearch` takes precedence. Selecting an
+additional Workspace or external tool returns an explicit error.
 
 ## Multimodal input
 
