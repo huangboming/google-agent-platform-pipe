@@ -24,6 +24,13 @@ _SCHEMA_FIELDS = {
     "anyOf",
     "propertyOrdering",
     "default",
+    "ref",
+    "defs",
+}
+_SCHEMA_FIELD_ALIASES = {
+    "$ref": "ref",
+    "$defs": "defs",
+    "definitions": "defs",
 }
 
 
@@ -35,14 +42,19 @@ def _clean_schema(value: Any) -> Any:
 
     cleaned = {}
     for key, item in value.items():
-        if key not in _SCHEMA_FIELDS:
+        field = _SCHEMA_FIELD_ALIASES.get(key, key)
+        if field not in _SCHEMA_FIELDS:
             continue
-        if key == "properties" and isinstance(item, dict):
-            cleaned[key] = {
+        if field in ("properties", "defs") and isinstance(item, dict):
+            cleaned[field] = {
                 name: _clean_schema(schema) for name, schema in item.items()
             }
+        elif field == "ref" and isinstance(item, str):
+            cleaned[field] = item.replace("#/$defs/", "#/defs/").replace(
+                "#/definitions/", "#/defs/"
+            )
         else:
-            cleaned[key] = _clean_schema(item)
+            cleaned[field] = _clean_schema(item)
 
     schema_type = cleaned.get("type")
     if isinstance(schema_type, list) and "null" in schema_type:

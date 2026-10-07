@@ -135,15 +135,25 @@ def generation_config(
     if stop:
         config["stopSequences"] = [stop] if isinstance(stop, str) else stop
 
-    thinking_level = thinking_level.strip().upper()
-    if thinking_level and thinking_level not in _THINKING_LEVELS:
+    requested_effort = body.get("reasoning_effort")
+    level_source = (
+        "reasoning_effort" if requested_effort is not None else "THINKING_LEVEL"
+    )
+    selected_level = (
+        requested_effort if requested_effort is not None else thinking_level
+    )
+    if not isinstance(selected_level, str):
+        raise ValueError(f"{level_source} must be a string.")
+
+    selected_level = selected_level.strip().upper()
+    if selected_level and selected_level not in _THINKING_LEVELS:
         raise ValueError(
-            "THINKING_LEVEL must be MINIMAL, LOW, MEDIUM, HIGH, or empty."
+            f"{level_source} must be MINIMAL, LOW, MEDIUM, HIGH, or empty."
         )
 
     thinking_config = {}
-    if thinking_level:
-        thinking_config["thinkingLevel"] = thinking_level
+    if selected_level:
+        thinking_config["thinkingLevel"] = selected_level
     if include_thoughts:
         thinking_config["includeThoughts"] = True
     if thinking_config:

@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncIterator, Callable, Dict, Any
+from typing import Any, AsyncIterator, Callable, Dict, Optional
 
 from .grounding import emit_grounding
 from .responses import add_usage_metadata
@@ -20,6 +20,9 @@ async def run_agent(
         model_parts = []
         function_calls = []
         prompt_feedback = None
+        finish_reason = None
+        finish_message = None
+        has_answer = False
         grounding_metadata = {}
         round_usage = {}
 
@@ -33,14 +36,21 @@ async def run_agent(
             if not candidates:
                 continue
             candidate = candidates[0]
+            if candidate.get("finishReason"):
+                finish_reason = candidate["finishReason"]
+                finish_message = candidate.get("finishMessage")
             if isinstance(candidate.get("groundingMetadata"), dict):
                 grounding_metadata = candidate["groundingMetadata"]
             for part in (candidate.get("content") or {}).get("parts", []):
                 model_parts.append(part)
                 if "text" in part:
-                    event_type = "reasoning" if part.get("thought") else "content"
+                    is_thought = bool(part.get("thought"))
+                    event_type = "reasoning" if is_thought else "content"
+                    if not is_thought and part["text"]:
+                        has_answer = True
                     yield {"type": event_type, "text": part["text"]}
                 elif "inlineData" in part:
+                    has_answer = True
                     yield {
                         "type": "content",
                         "text": _render_inline_data(part["inlineData"]),
@@ -50,9 +60,11 @@ async def run_agent(
 
         usage_metadata = add_usage_metadata(usage_metadata, round_usage)
         if not function_calls:
-            if not model_parts and prompt_feedback:
-                reason = prompt_feedback.get("blockReason", "unknown reason")
-                raise RuntimeError(f"Agent Platform blocked the prompt: {reason}")
+            failure = _generation_failure(
+                prompt_feedback, finish_reason, finish_message, has_answer
+            )
+            if failure:
+                raise RuntimeError(failure)
             await emit_grounding(grounding_metadata, event_emitter)
             if usage_metadata:
                 yield {"type": "usage", "metadata": usage_metadata}
@@ -76,6 +88,28 @@ async def run_agent(
         payload["contents"].append({"role": "user", "parts": responses})
 
     raise RuntimeError("Maximum tool-call iterations reached.")
+
+
+def _generation_failure(
+    prompt_feedback: Optional[dict],
+    finish_reason: Optional[str],
+    finish_message: Optional[str],
+    has_answer: bool,
+) -> Optional[str]:
+    if isinstance(prompt_feedback, dict) and prompt_feedback.get("blockReason"):
+        reason = prompt_feedback["blockReason"]
+        message = prompt_feedback.get("blockReasonMessage")
+        detail = f"{reason}: {message}" if message else reason
+        return f"Agent Platform blocked the prompt: {detail}"
+
+    successful_reasons = {None, "STOP", "FINISH_REASON_UNSPECIFIED"}
+    if finish_reason in successful_reasons:
+        return None
+    if finish_reason == "MAX_TOKENS" and has_answer:
+        return None
+
+    detail = f"{finish_reason}: {finish_message}" if finish_message else finish_reason
+    return f"Agent Platform stopped generation: {detail}"
 
 
 def _render_inline_data(inline_data: dict) -> str:

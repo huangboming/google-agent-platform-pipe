@@ -26,7 +26,7 @@ class Valves(BaseModel):
     )
     THINKING_LEVEL: str = Field(
         default="",
-        description="Optional Gemini thinking level: MINIMAL, LOW, MEDIUM, or HIGH.",
+        description="Default Gemini thinking level when reasoning_effort is not set.",
     )
     MAX_TOOL_ITERATIONS: int = Field(
         default=8,

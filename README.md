@@ -15,7 +15,7 @@ a single deployable Python file—with no additional runtime dependencies.
 - Collapsible Gemini thought summaries and token-usage reporting
 - Gemini thought-signature preservation across tool turns
 - Text and inline media output
-- Configurable Gemini thinking level
+- Per-request reasoning effort with a configurable thinking-level default
 - Agent Platform API-key authentication
 
 ## Quick start
@@ -50,7 +50,7 @@ on your Agent Platform project and region.
 | `GOOGLE_API_KEY` | — | Agent Platform API key; required |
 | `MODELS` | See above | Comma-separated model IDs exposed in Open WebUI |
 | `INCLUDE_THOUGHTS` | `true` | Show available thought summaries in Open WebUI |
-| `THINKING_LEVEL` | Empty | `MINIMAL`, `LOW`, `MEDIUM`, or `HIGH` |
+| `THINKING_LEVEL` | Empty | Default `MINIMAL`, `LOW`, `MEDIUM`, or `HIGH` when the request does not set `reasoning_effort` |
 | `MAX_TOOL_ITERATIONS` | `8` | Maximum model/tool round trips |
 | `REQUEST_TIMEOUT_SECONDS` | `300` | Upstream request timeout |
 | `MAX_INLINE_MEDIA_MB` | `18` | Total decoded inline-media limit per request |
@@ -58,8 +58,9 @@ on your Agent Platform project and region.
 
 Google exposes thought summaries rather than a model's raw chain of thought, and
 only when available. Open WebUI stores returned summaries in the chat history.
-Reported token usage includes all internal model calls made during a multi-turn
-tool loop.
+Open WebUI's per-request `reasoning_effort` parameter takes precedence over the
+`THINKING_LEVEL` Valve. Reported token usage includes all internal model calls
+made during a multi-turn tool loop.
 
 ## Native Google Search
 
@@ -70,7 +71,8 @@ calling. The Pipe reads the toggle directly; Open WebUI's configured search
 provider is not called.
 
 Grounded responses include Open WebUI source cards and Google's Search
-Suggestions widget. Internal tasks such as title generation never search.
+Suggestions widget. Internal tasks such as title generation never receive
+files, Search, or tools.
 
 Agent Platform does not allow `googleSearch` and function declarations in the
 same request. When Web Search is on, Open WebUI's automatically injected

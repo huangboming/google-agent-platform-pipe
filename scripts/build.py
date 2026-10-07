@@ -24,7 +24,7 @@ MODULES = (
 )
 PLUGIN_HEADER = '''"""
 title: Google Agent Platform
-version: 0.4.0
+version: 0.4.1
 description: Native Google Agent Platform models with streaming, original-file input, Google Search, reasoning, usage, and tool calling.
 """
 '''

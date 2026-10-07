@@ -36,6 +36,9 @@ def tools_for_request(
     internal_task: bool,
     native_files: bool,
 ) -> dict:
+    if internal_task:
+        return {}
+
     selected = {
         name: tool
         for name, tool in tools.items()
@@ -46,7 +49,7 @@ def tools_for_request(
             and tool.get("type") == "builtin"
         )
     }
-    if not google_search and not internal_task:
+    if not google_search:
         return selected
 
     without_open_webui_search = {
@@ -54,9 +57,6 @@ def tools_for_request(
         for name, tool in selected.items()
         if name not in _OPEN_WEBUI_SEARCH_TOOLS
     }
-    if internal_task:
-        return without_open_webui_search
-
     remaining = {
         name: tool
         for name, tool in without_open_webui_search.items()

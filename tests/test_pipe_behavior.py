@@ -171,6 +171,73 @@ class PipeBehaviorContract:
             "title", declaration["parameters"]["properties"]["city"]
         )
 
+    async def test_request_reasoning_effort_overrides_valve_default(self):
+        pipe, client = self.make_pipe([[text_response("A considered answer.")]])
+        pipe.valves.THINKING_LEVEL = "LOW"
+
+        await pipe.pipe(
+            {
+                "model": "pipe.gemini-3.8-flash",
+                "stream": False,
+                "messages": [{"role": "user", "content": "Think carefully."}],
+                "reasoning_effort": "high",
+            }
+        )
+
+        thinking_config = client.requests[0]["payload"]["generationConfig"][
+            "thinkingConfig"
+        ]
+        self.assertEqual(thinking_config["thinkingLevel"], "HIGH")
+
+    async def test_preserves_reusable_tool_schema_definitions(self):
+        pipe, client = self.make_pipe([[text_response("Found it.")]])
+
+        await pipe.pipe(
+            {
+                "model": "pipe.gemini-3.8-flash",
+                "stream": False,
+                "messages": [{"role": "user", "content": "Find Paris."}],
+            },
+            __tools__={
+                "lookup": {
+                    "spec": {
+                        "name": "lookup",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "location": {"$ref": "#/$defs/Location"}
+                            },
+                            "$defs": {
+                                "Location": {
+                                    "type": "object",
+                                    "properties": {
+                                        "city": {"type": "string"}
+                                    },
+                                    "required": ["city"],
+                                }
+                            },
+                        },
+                    }
+                }
+            },
+        )
+
+        parameters = client.requests[0]["payload"]["tools"][0][
+            "functionDeclarations"
+        ][0]["parameters"]
+        self.assertEqual(
+            parameters["properties"]["location"],
+            {"ref": "#/defs/Location"},
+        )
+        self.assertEqual(
+            parameters["defs"]["Location"],
+            {
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+                "required": ["city"],
+            },
+        )
+
     async def test_sends_original_pdf_without_open_webui_rag_context(self):
         pipe, client = self.make_pipe([[text_response("The original PDF.")]])
         pdf = b"%PDF-1.7\noriginal document bytes"
@@ -473,6 +540,66 @@ class PipeBehaviorContract:
             ["hello", " world"],
         )
 
+    async def test_surfaces_an_abnormal_generation_stop(self):
+        pipe, _ = self.make_pipe(
+            [
+                [
+                    {
+                        "candidates": [
+                            {
+                                "content": {"role": "model", "parts": []},
+                                "finishReason": "SAFETY",
+                                "finishMessage": "Blocked by safety policy",
+                            }
+                        ]
+                    }
+                ]
+            ]
+        )
+
+        with self.assertRaisesRegex(
+            RuntimeError, "SAFETY: Blocked by safety policy"
+        ):
+            await pipe.pipe(
+                {
+                    "model": "pipe.gemini-3.8-flash",
+                    "stream": False,
+                    "messages": [{"role": "user", "content": "Hi"}],
+                }
+            )
+
+    async def test_returns_partial_content_stopped_at_the_token_limit(self):
+        pipe, _ = self.make_pipe(
+            [
+                [
+                    {
+                        "candidates": [
+                            {
+                                "content": {
+                                    "role": "model",
+                                    "parts": [{"text": "Partial answer"}],
+                                },
+                                "finishReason": "MAX_TOKENS",
+                            }
+                        ]
+                    }
+                ]
+            ]
+        )
+
+        completion = await pipe.pipe(
+            {
+                "model": "pipe.gemini-3.8-flash",
+                "stream": False,
+                "messages": [{"role": "user", "content": "Write a lot"}],
+            }
+        )
+
+        self.assertEqual(
+            completion["choices"][0]["message"]["content"],
+            "Partial answer",
+        )
+
     async def test_exposes_reasoning_and_token_usage(self):
         response_stream = [
             {
@@ -650,7 +777,7 @@ class PipeBehaviorContract:
 
         self.assertEqual(client.requests, [])
 
-    async def test_internal_tasks_do_not_use_native_google_search(self):
+    async def test_internal_tasks_do_not_receive_tools(self):
         pipe, client = self.make_pipe([[text_response("A short title")]])
 
         await pipe.pipe(
@@ -659,7 +786,20 @@ class PipeBehaviorContract:
                 "stream": False,
                 "messages": [{"role": "user", "content": "Create a title"}],
             },
-            __tools__={"search_web": {}, "fetch_url": {}},
+            __tools__={
+                "search_web": {"type": "builtin"},
+                "fetch_url": {"type": "builtin"},
+                "ask_user": {
+                    "type": "builtin",
+                    "spec": {"name": "ask_user"},
+                },
+                "weather": {
+                    "spec": {
+                        "name": "weather",
+                        "parameters": {"type": "object"},
+                    }
+                },
+            },
             __metadata__={"features": {"web_search": True}},
             __task__="title_generation",
         )
