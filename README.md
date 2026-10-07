@@ -9,7 +9,7 @@ a single deployable Python file—with no additional runtime dependencies.
 ## Features
 
 - Asynchronous SSE streaming
-- Text, image, audio, video, PDF, and `gs://` input
+- Native text, image, audio, video, and original-PDF input
 - Parallel and multi-turn Open WebUI tool calls
 - Gemini-native Google Search with citations and Search Suggestions
 - Collapsible Gemini thought summaries and token-usage reporting
@@ -77,13 +77,46 @@ same request. When Web Search is on, Open WebUI's automatically injected
 built-in tools are omitted and `googleSearch` takes precedence. Selecting an
 additional Workspace or external tool returns an explicit error.
 
-## Multimodal input
+## Native file input
 
-- Message data URLs are sent as Gemini `inlineData`.
-- Open WebUI uploads are read server-side and sent as `inlineData`.
+Attach a PDF in chat and ask Gemini about it. The Pipe sends the original PDF
+bytes as `application/pdf` rather than using Open WebUI's extracted text. This
+preserves pages, layout, tables, and images for Gemini's native document
+understanding.
+
+For the cleanest Open WebUI setup, create a Workspace Model preset for the Pipe:
+
+1. Enable **File Upload**.
+2. Disable **File Context** to prevent extracted content from being retrieved or
+   injected during the chat, and to avoid Open WebUI source cards.
+3. Optionally disable the built-in **Files** tool category.
+
+Correctness does not depend on the second and third settings: when a native file
+is attached, the Pipe restores the prompt captured before Open WebUI's source
+wrapper and omits its chat-file retrieval tools.
+
+> **Open WebUI still performs Content Extraction when uploading a document.**
+> File Context controls chat-time retrieval and injection, not upload-time
+> processing. The stock UI uploads documents with `process=true` before the Pipe
+> runs; the Pipe ignores that extracted content and sends only the original file
+> to Gemini. **Bypass Embedding and Retrieval** can avoid vector indexing but not
+> extraction. Completely skipping extraction requires an Open WebUI client or UI
+> change that uploads with `process=false`. If external extraction or embedding
+> services are configured, consider their privacy and cost implications.
+
+Input behavior:
+
+- Local Open WebUI uploads are read server-side and sent as Gemini `inlineData`.
 - `gs://` objects are sent as Gemini `fileData`.
-- Arbitrary HTTP media URLs are not downloaded, avoiding a server-side request
-  forgery surface.
+- PDF, plain text, and supported image, audio, and video MIME types are accepted.
+- Unsupported formats such as DOCX fail explicitly instead of silently falling
+  back to extracted text.
+- S3, Azure, and arbitrary HTTP objects are not downloaded. Use local Open WebUI
+  storage or an Agent Platform-accessible `gs://` object.
+- Message data URLs continue to be sent as Gemini `inlineData`.
+
+The `MAX_INLINE_MEDIA_MB` Valve limits the combined decoded size of local files
+and message media. Large documents should use `gs://`.
 
 ## Scope
 

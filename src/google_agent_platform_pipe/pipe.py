@@ -3,14 +3,24 @@ from typing import Any, Dict, List, Optional
 from .agent import run_agent
 from .client import AgentPlatformClient
 from .config import Valves
-from .files import ensure_media_limit, uploaded_file_parts
-from .messages import generation_config, message_parts
+from .files import ensure_media_limit, has_uploaded_files, uploaded_file_parts
+from .messages import (
+    generation_config,
+    message_parts,
+    restore_pre_source_messages,
+)
 from .models import parse_models, select_model
 from .responses import collect_openai_response, stream_openai_response
 from .tools import tool_declarations
 
 
 _OPEN_WEBUI_SEARCH_TOOLS = {"search_web", "fetch_url"}
+_OPEN_WEBUI_FILE_TOOLS = {
+    "grep_chat_files",
+    "list_chat_files",
+    "query_chat_files",
+    "view_file",
+}
 
 
 def native_google_search_enabled(
@@ -20,13 +30,28 @@ def native_google_search_enabled(
     return not task and isinstance(features, dict) and features.get("web_search") is True
 
 
-def tools_for_request(tools: dict, google_search: bool, internal_task: bool) -> dict:
+def tools_for_request(
+    tools: dict,
+    google_search: bool,
+    internal_task: bool,
+    native_files: bool,
+) -> dict:
+    selected = {
+        name: tool
+        for name, tool in tools.items()
+        if not (
+            native_files
+            and name in _OPEN_WEBUI_FILE_TOOLS
+            and isinstance(tool, dict)
+            and tool.get("type") == "builtin"
+        )
+    }
     if not google_search and not internal_task:
-        return tools
+        return selected
 
     without_open_webui_search = {
         name: tool
-        for name, tool in tools.items()
+        for name, tool in selected.items()
         if name not in _OPEN_WEBUI_SEARCH_TOOLS
     }
     if internal_task:
@@ -75,10 +100,14 @@ class Pipe:
             raise ValueError("Google Agent Platform API key is not configured.")
 
         google_search = native_google_search_enabled(__metadata__, __task__)
-        tools = tools_for_request(__tools__ or {}, google_search, bool(__task__))
+        files = [] if __task__ else (__files__ or [])
+        native_files = has_uploaded_files(files)
+        tools = tools_for_request(
+            __tools__ or {}, google_search, bool(__task__), native_files
+        )
         model = select_model(body.get("model", ""), parse_models(self.valves.MODELS))
         payload = await self._build_request(
-            body, tools, __files__ or [], google_search
+            body, tools, files, google_search, __metadata__
         )
 
         async def stream_generate(selected_model, request):
@@ -104,14 +133,24 @@ class Pipe:
         return await collect_openai_response(output, model)
 
     async def _build_request(
-        self, body: dict, tools: dict, files: list, google_search: bool
+        self,
+        body: dict,
+        tools: dict,
+        files: list,
+        google_search: bool,
+        metadata: Optional[dict],
     ) -> Dict[str, Any]:
         contents = []
         system_parts = []
-        inline_bytes = 0
         max_inline_bytes = self.valves.MAX_INLINE_MEDIA_MB * 1024 * 1024
+        file_parts, inline_bytes = await uploaded_file_parts(
+            files, max_inline_bytes
+        )
+        messages = body.get("messages", [])
+        if file_parts:
+            messages = restore_pre_source_messages(messages, metadata)
 
-        for message in body.get("messages", []):
+        for message in messages:
             role = message.get("role", "user")
             parts, used_bytes = message_parts(message.get("content", ""))
             inline_bytes += used_bytes
@@ -126,15 +165,10 @@ class Pipe:
                 {"role": gemini_role, "parts": parts or [{"text": ""}]}
             )
 
-        file_parts, used_bytes = await uploaded_file_parts(
-            files, inline_bytes, max_inline_bytes
-        )
-        inline_bytes += used_bytes
-        ensure_media_limit(inline_bytes, max_inline_bytes)
         if file_parts:
             for content in reversed(contents):
                 if content["role"] == "user":
-                    content["parts"].extend(file_parts)
+                    content["parts"] = file_parts + content["parts"]
                     break
             else:
                 contents.append({"role": "user", "parts": file_parts})

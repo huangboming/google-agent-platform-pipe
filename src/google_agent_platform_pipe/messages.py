@@ -1,5 +1,6 @@
 import base64
 import binascii
+import copy
 import re
 from typing import Any, Dict
 
@@ -66,6 +67,50 @@ def message_parts(content: Any):
             # Agent Platform cannot consume arbitrary HTTP URLs as fileData.
             parts.append({"text": f"[Media URL: {source}]"})
     return parts, used_bytes
+
+
+def restore_pre_source_messages(messages: list, metadata: Any) -> list:
+    """Restore prompts captured before Open WebUI adds RAG source context."""
+    if not isinstance(metadata, dict) or not metadata.get("sources"):
+        return messages
+    if metadata.get("user_prompt") is None:
+        raise ValueError(
+            "Open WebUI added source context without preserving the original prompt. "
+            "Disable File Context for this model."
+        )
+
+    restored = copy.deepcopy(messages)
+    original_user = metadata["user_prompt"]
+    for message in reversed(restored):
+        if message.get("role") != "user":
+            continue
+        content = message.get("content")
+        if isinstance(content, list):
+            for item in content:
+                if isinstance(item, dict) and item.get("type") in (
+                    "text",
+                    "input_text",
+                ):
+                    item["text"] = original_user
+                    break
+            else:
+                content.insert(0, {"type": "text", "text": original_user})
+        else:
+            message["content"] = original_user
+        break
+
+    if "system_prompt" in metadata:
+        original_system = metadata.get("system_prompt")
+        without_system = [
+            message for message in restored if message.get("role") != "system"
+        ]
+        if original_system:
+            without_system.insert(
+                0, {"role": "system", "content": original_system}
+            )
+        restored = without_system
+
+    return restored
 
 
 def generation_config(
