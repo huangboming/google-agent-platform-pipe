@@ -19,10 +19,17 @@ It provides streaming, multimodal input, and native Open WebUI tool calling as a
 You need a [Google Agent Platform API key](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/start/api-keys).
 
 1. In Open WebUI, go to **Admin Panel → Functions**.
-2. Import [`dist/google_agent_platform.py`](./dist/google_agent_platform.py), or paste it into a new Function.
+2. Choose **Import From Link** and paste the latest Release URL:
+
+   ```text
+   https://github.com/huangboming/google-agent-platform-pipe/releases/latest/download/google_agent_platform.py
+   ```
+
 3. Save and enable the Function.
 4. Set its `GOOGLE_API_KEY` Valve.
 5. Start a chat with a model under `Google/`.
+
+Alternatively, download `google_agent_platform.py` from the [latest Release](https://github.com/huangboming/google-agent-platform-pipe/releases/latest) and import it manually.
 
 ## Default models
 
