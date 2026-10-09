@@ -10,9 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_DIR = ROOT / "src" / "google_agent_platform_pipe"
 OUTPUT = ROOT / "dist" / "google_agent_platform.py"
-PROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))[
-    "project"
-]
+PYPROJECT = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+PROJECT = PYPROJECT["project"]
+OPEN_WEBUI = PYPROJECT["tool"]["open-webui"]
 MODULES = (
     "config.py",
     "models.py",
@@ -27,7 +27,11 @@ MODULES = (
 )
 PLUGIN_HEADER = f'''"""
 title: Google Agent Platform
+author: {PROJECT["authors"][0]["name"]}
+author_url: {OPEN_WEBUI["author_url"]}
+project_url: {PROJECT["urls"]["Repository"]}
 version: {PROJECT["version"]}
+license: {PROJECT["license"]}
 description: Native Google Agent Platform models with streaming, original-file input, Google Search, reasoning, usage, and tool calling.
 """
 '''
