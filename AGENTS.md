@@ -14,11 +14,16 @@
 - Verify it with `uv run python scripts/build.py --check`.
 - Project version and Open WebUI Function metadata come from `pyproject.toml`.
 
+## Documentation
+
+- Keep `README.md` focused on user-facing features, setup, configuration, and usage limitations; avoid defensive explanations of implementation details.
+
 ## Architecture
 
 - Keep deterministic transformations in module-level pure functions.
 - Keep HTTP, streaming, tool execution, and agent-loop orchestration in the imperative shell.
 - Avoid compatibility layers unless an actual released contract requires one.
+- Check Open WebUI integration contracts against the supported released version's source, not upstream `main`.
 
 ## Tests
 
