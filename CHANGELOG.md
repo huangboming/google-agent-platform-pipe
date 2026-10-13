@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Send API keys in the `x-goog-api-key` header instead of URL query parameters to prevent exposure in HTTP request URL logs.
+
 ## [0.4.1] - 2026-10-09
 
 Initial public release.

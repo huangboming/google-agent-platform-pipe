@@ -26,8 +26,11 @@ class AgentPlatformClient:
             async with client.stream(
                 "POST",
                 url,
-                params={"alt": "sse", "key": api_key},
-                headers={"Content-Type": "application/json"},
+                params={"alt": "sse"},
+                headers={
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": api_key,
+                },
                 json=payload,
             ) as response:
                 if response.status_code >= 400:
