@@ -219,3 +219,35 @@ async def test_full_mode_preserves_authorized_tool_execution(make_pipe):
     )
 
     assert observed == ["executed"]
+
+
+@pytest.mark.parametrize("failure_stage", ["callable", "serialization"])
+async def test_tool_errors_do_not_forward_private_diagnostics(make_pipe, failure_stage):
+    secret = "private-tool-token"
+
+    class UnserializableResult:
+        def __str__(self):
+            raise RuntimeError(f"Private serialization diagnostic: {secret}")
+
+    async def tool():
+        if failure_stage == "callable":
+            raise RuntimeError(f"Private tool diagnostic: {secret}")
+        return UnserializableResult()
+
+    pipe, client = make_pipe(
+        [
+            [tool_calls_response({"name": "tool", "args": {}})],
+            [text_response("The tool failed.")],
+        ]
+    )
+
+    completion = await pipe.pipe(
+        BODY, __tools__={"tool": {"spec": {"name": "tool"}, "callable": tool}}
+    )
+
+    assert completion["choices"][0]["message"]["content"] == "The tool failed."
+    response = client.requests[1]["payload"]["contents"][-1]["parts"][0]
+    assert response["functionResponse"]["response"] == {
+        "error": "Tool execution failed."
+    }
+    assert secret not in str(client.requests)

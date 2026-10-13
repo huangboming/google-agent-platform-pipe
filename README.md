@@ -58,7 +58,7 @@ Google exposes thought summaries rather than a model's raw chain of thought, and
 
 ## Tool execution
 
-Open WebUI tools receive only arguments declared in their schemas; model-supplied `__`-prefixed context parameters cannot override the authenticated user or request.
+Open WebUI tools receive only arguments declared in their schemas; model-supplied `__`-prefixed context parameters cannot override the authenticated user or request. Tool exceptions return a generic failure to the model instead of forwarding private diagnostics.
 
 The Pipe does not implement Open WebUI's native tool approval/resume flow. When Tool Permissions is enabled and the per-chat mode is **Ask for permission** (`ask`), any model turn requesting Open WebUI tools fails before executing the entire batch. Responses that do not call tools still work. Automatic execution is available only when the request is not in `ask` mode.
 

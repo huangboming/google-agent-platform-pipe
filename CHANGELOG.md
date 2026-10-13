@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Redact the configured API key from upstream error messages before truncation, and replace private tool exception details with a generic failure response.
 - Filter model tool arguments to declared parameters and prevent overrides of Open WebUI's injected user or request context.
 - Refuse automatic tool execution in Open WebUI's `ask` approval mode instead of bypassing confirmation.
 - Resolve uploaded attachments by Open WebUI file ID and verify read access instead of trusting client-supplied paths, ownership, or media types.

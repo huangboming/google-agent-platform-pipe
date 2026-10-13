@@ -35,7 +35,9 @@ class AgentPlatformClient:
             ) as response:
                 if response.status_code >= 400:
                     raw_error = await response.aread()
-                    raise RuntimeError(_upstream_error(response.status_code, raw_error))
+                    raise RuntimeError(
+                        _upstream_error(response.status_code, raw_error, api_key)
+                    )
 
                 data_lines = []
                 async for line in response.aiter_lines():
@@ -60,11 +62,14 @@ def _decode_sse(data_lines: List[str]) -> Dict[str, Any]:
     return decoded
 
 
-def _upstream_error(status_code: int, raw_error: bytes) -> str:
-    message = raw_error.decode("utf-8", errors="replace")[:2000]
+def _upstream_error(status_code: int, raw_error: bytes, api_key: str) -> str:
+    message = raw_error.decode("utf-8", errors="replace")
     try:
         error = json.loads(message).get("error", {})
         message = error.get("message") or message
     except (json.JSONDecodeError, AttributeError):
         pass
-    return f"Agent Platform request failed ({status_code}): {message}"
+    message = str(message)
+    if api_key:
+        message = message.replace(api_key, "[REDACTED]")
+    return f"Agent Platform request failed ({status_code}): {message[:2000]}"

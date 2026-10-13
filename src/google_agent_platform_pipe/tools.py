@@ -122,8 +122,8 @@ async def execute_tool(call: dict, tools: dict) -> Dict[str, Any]:
                     if isinstance(normalized, dict)
                     else {"result": normalized}
                 )
-            except Exception as exc:
-                response = {"error": str(exc)}
+            except Exception:
+                response = {"error": "Tool execution failed."}
 
     function_response = {"name": name, "response": response}
     if call.get("id"):
