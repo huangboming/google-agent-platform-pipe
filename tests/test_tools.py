@@ -104,7 +104,10 @@ async def test_executes_tool_and_continues_the_model_turn(make_pipe):
                 "callable": weather,
                 "spec": {
                     "name": "weather",
-                    "parameters": {"type": "object", "properties": {}},
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"city": {"type": "string"}},
+                    },
                 },
             }
         },

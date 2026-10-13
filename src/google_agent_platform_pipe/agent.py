@@ -13,6 +13,7 @@ async def run_agent(
     max_tool_iterations: int,
     event_emitter,
     stream_generate: Callable,
+    tool_approval_required: bool,
 ) -> AsyncIterator[Dict[str, Any]]:
     usage_metadata = {}
 
@@ -69,6 +70,12 @@ async def run_agent(
             if usage_metadata:
                 yield {"type": "usage", "metadata": usage_metadata}
             return
+
+        if tool_approval_required:
+            raise RuntimeError(
+                "Tool execution requires approval, but this Pipe does not support "
+                "Open WebUI's ask mode. No tools were executed."
+            )
 
         if iteration + 1 >= max_tool_iterations:
             raise RuntimeError("Maximum tool-call iterations reached.")

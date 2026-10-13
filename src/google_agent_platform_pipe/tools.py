@@ -63,14 +63,29 @@ def _clean_schema(value: Any) -> Any:
     return cleaned
 
 
+def _tool_spec(tool: dict) -> dict:
+    spec = tool.get("spec") or {}
+    if spec.get("type") == "function":
+        spec = spec.get("function") or {}
+    return spec
+
+
+def tool_arguments(arguments: dict, tool: dict) -> dict:
+    parameters = _tool_spec(tool).get("parameters") or {}
+    properties = parameters.get("properties") or {}
+    return {
+        name: value
+        for name, value in arguments.items()
+        if name in properties and not name.startswith("__")
+    }
+
+
 def tool_declarations(tools: dict) -> List[Dict[str, Any]]:
     declarations = []
     for fallback_name, tool in tools.items():
         if not isinstance(tool, dict):
             continue
-        spec = tool.get("spec") or {}
-        if spec.get("type") == "function":
-            spec = spec.get("function") or {}
+        spec = _tool_spec(tool)
 
         declaration = {"name": spec.get("name") or fallback_name}
         if spec.get("description"):
@@ -95,12 +110,12 @@ async def execute_tool(call: dict, tools: dict) -> Dict[str, Any]:
     if not isinstance(tool, dict) or not callable(tool.get("callable")):
         response = {"error": f"Tool is unavailable: {name}"}
     else:
-        arguments = call.get("args") or {}
+        arguments = call.get("args", {})
         if not isinstance(arguments, dict):
             response = {"error": "Tool arguments must be an object."}
         else:
             try:
-                result = await tool["callable"](**arguments)
+                result = await tool["callable"](**tool_arguments(arguments, tool))
                 normalized = _json_value(result)
                 response = (
                     normalized

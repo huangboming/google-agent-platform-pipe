@@ -29,6 +29,11 @@ def native_google_search_enabled(metadata: Optional[dict], task: Optional[str]) 
     )
 
 
+def tool_approval_required(metadata: Optional[dict]) -> bool:
+    params = metadata.get("params", {}) if isinstance(metadata, dict) else {}
+    return isinstance(params, dict) and params.get("tool_approval_mode") == "ask"
+
+
 def tools_for_request(
     tools: dict,
     google_search: bool,
@@ -126,6 +131,7 @@ class Pipe:
             self.valves.MAX_TOOL_ITERATIONS,
             __event_emitter__,
             stream_generate,
+            tool_approval_required(__metadata__),
         )
         if body.get("stream", False):
             return stream_openai_response(output, model)

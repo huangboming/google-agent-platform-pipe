@@ -56,6 +56,12 @@ The Pipe uses explicit model IDs because Google's `*-latest` selectors can retur
 
 Google exposes thought summaries rather than a model's raw chain of thought, and only when available. Open WebUI stores returned summaries in the chat history. Open WebUI's per-request `reasoning_effort` parameter takes precedence over the `THINKING_LEVEL` Valve. Reported token usage includes all internal model calls made during a multi-turn tool loop.
 
+## Tool execution
+
+Open WebUI tools receive only arguments declared in their schemas; model-supplied `__`-prefixed context parameters cannot override the authenticated user or request.
+
+The Pipe does not implement Open WebUI's native tool approval/resume flow. When Tool Permissions is enabled and the per-chat mode is **Ask for permission** (`ask`), any model turn requesting Open WebUI tools fails before executing the entire batch. Responses that do not call tools still work. Automatic execution is available only when the request is not in `ask` mode.
+
 ## Native Gemini capabilities
 
 These capabilities are handled directly by Gemini through Agent Platform rather than by Open WebUI's equivalent processing.
