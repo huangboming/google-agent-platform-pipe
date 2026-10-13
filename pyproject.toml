@@ -1,6 +1,6 @@
 [project]
 name = "google-agent-platform-pipe"
-version = "0.4.1"
+version = "0.4.2"
 description = "Google Agent Platform Pipe for Open WebUI"
 readme = "README.md"
 authors = [{ name = "huangboming" }]

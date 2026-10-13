@@ -3,7 +3,7 @@ title: Google Agent Platform
 author: huangboming
 author_url: https://github.com/huangboming
 project_url: https://github.com/huangboming/google-agent-platform-pipe
-version: 0.4.1
+version: 0.4.2
 license: Apache-2.0
 description: Native Google Agent Platform models with streaming, original-file input, Google Search, reasoning, usage, and tool calling.
 """

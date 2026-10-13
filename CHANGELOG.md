@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-13
+
 ### Fixed
 
 - Redact the configured API key from upstream error messages before truncation, and replace private tool exception details with a generic failure response.
@@ -34,5 +36,6 @@ Initial public release.
 - Preserve references and definitions in complex tool schemas.
 - Prevent files, Search, and tools from leaking into Open WebUI internal tasks.
 
-[Unreleased]: https://github.com/huangboming/google-agent-platform-pipe/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/huangboming/google-agent-platform-pipe/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/huangboming/google-agent-platform-pipe/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/huangboming/google-agent-platform-pipe/releases/tag/v0.4.1

@@ -58,9 +58,9 @@ Google exposes thought summaries rather than a model's raw chain of thought, and
 
 ## Tool execution
 
-Open WebUI tools receive only arguments declared in their schemas; model-supplied `__`-prefixed context parameters cannot override the authenticated user or request. Tool exceptions return a generic failure to the model instead of forwarding private diagnostics.
+Select Workspace or external tools in Open WebUI to make them available to Gemini.
 
-The Pipe does not implement Open WebUI's native tool approval/resume flow. When Tool Permissions is enabled and the per-chat mode is **Ask for permission** (`ask`), any model turn requesting Open WebUI tools fails before executing the entire batch. Responses that do not call tools still work. Automatic execution is available only when the request is not in `ask` mode.
+Per-call **Ask for permission** mode is not supported. In this mode, responses that need tools return an error; responses without tool calls still work.
 
 ## Native Gemini capabilities
 
@@ -83,8 +83,6 @@ For the cleanest Workspace Model setup:
 1. Enable **File Upload**.
 2. Disable **File Context** to avoid chat-time retrieval and duplicate source cards.
 3. Optionally disable the built-in **Files** tool category.
-
-Uploaded attachments are resolved by Open WebUI file ID and checked against the current user's read permissions, including shared-file access. Client-supplied server paths and file metadata are not trusted.
 
 The Pipe always ignores Open WebUI's extracted document text and sends the original file. Open WebUI still performs Content Extraction during upload; disabling File Context prevents later retrieval but does not skip that upload-time processing.
 
