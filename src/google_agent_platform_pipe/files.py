@@ -3,6 +3,15 @@ import base64
 import mimetypes
 from pathlib import Path
 
+try:
+    from open_webui.models.files import Files
+    from open_webui.models.users import UserModel
+    from open_webui.utils.access_control.files import has_access_to_file
+except ModuleNotFoundError as exc:
+    if not (exc.name or "").startswith("open_webui"):
+        raise
+    Files = UserModel = has_access_to_file = None
+
 _SUPPORTED_MIME_TYPES = {
     "application/pdf",
     "audio/mp3",
@@ -65,7 +74,18 @@ def _mime_type(file_info: dict) -> str:
     return _MIME_ALIASES.get(normalized, normalized)
 
 
-async def uploaded_file_parts(files: list, max_bytes: int):
+async def uploaded_file_parts(files: list, max_bytes: int, user: dict | None):
+    if not has_uploaded_files(files):
+        return [], 0
+    if not isinstance(user, dict) or not user.get("id"):
+        raise ValueError(
+            "Open WebUI user context is required to access uploaded files."
+        )
+
+    if Files is None or UserModel is None or has_access_to_file is None:
+        raise ValueError("Uploaded files require Open WebUI file access APIs.")
+
+    current_user = UserModel(**user)
     parts = []
     used_bytes = 0
     for wrapper in files:
@@ -73,6 +93,19 @@ async def uploaded_file_parts(files: list, max_bytes: int):
         if file_info is None:
             continue
 
+        file_id = file_info.get("id") or wrapper.get("id")
+        if not isinstance(file_id, str) or not file_id:
+            raise ValueError("Uploaded files must have an Open WebUI file ID.")
+
+        file = await Files.get_file_by_id(file_id)
+        if file is None or not (
+            file.user_id == current_user.id
+            or current_user.role == "admin"
+            or await has_access_to_file(file_id, "read", current_user)
+        ):
+            raise ValueError("Uploaded file is unavailable or access is denied.")
+
+        file_info = file.model_dump()
         name = _display_name(wrapper, file_info)
         path_value = file_info.get("path")
         if not path_value:

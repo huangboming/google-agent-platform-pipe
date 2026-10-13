@@ -2,7 +2,7 @@
 
 A lightweight [Open WebUI Pipe](https://docs.openwebui.com/features/extensibility/plugin/functions/pipe/) for Google Agent Platform models.
 
-It provides streaming, multimodal input, and native Open WebUI tool calling as a single deployable Python file—with no additional runtime dependencies.
+It provides streaming, multimodal input, and native Open WebUI tool calling as a single deployable Python file—with no additional runtime dependencies. Open WebUI integration targets version 0.11.4.
 
 ## Features
 
@@ -77,6 +77,8 @@ For the cleanest Workspace Model setup:
 1. Enable **File Upload**.
 2. Disable **File Context** to avoid chat-time retrieval and duplicate source cards.
 3. Optionally disable the built-in **Files** tool category.
+
+Uploaded attachments are resolved by Open WebUI file ID and checked against the current user's read permissions, including shared-file access. Client-supplied server paths and file metadata are not trusted.
 
 The Pipe always ignores Open WebUI's extracted document text and sends the original file. Open WebUI still performs Content Extraction during upload; disabling File Context prevents later retrieval but does not skip that upload-time processing.
 

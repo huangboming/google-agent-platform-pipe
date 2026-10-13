@@ -1,5 +1,6 @@
 import copy
 import importlib.util
+import sys
 from pathlib import Path
 
 from google_agent_platform_pipe import Pipe as SourcePipe
@@ -22,6 +23,7 @@ def load_distribution_pipe():
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Unable to load generated Pipe from {path}")
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module.Pipe
 

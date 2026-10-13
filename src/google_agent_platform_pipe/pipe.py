@@ -93,6 +93,7 @@ class Pipe:
         __event_emitter__=None,
         __metadata__: Optional[dict] = None,
         __task__: Optional[str] = None,
+        __user__: Optional[dict] = None,
     ):
         if not self.valves.GOOGLE_API_KEY.strip():
             raise ValueError("Google Agent Platform API key is not configured.")
@@ -105,7 +106,7 @@ class Pipe:
         )
         model = select_model(body.get("model", ""), parse_models(self.valves.MODELS))
         payload = await self._build_request(
-            body, tools, files, google_search, __metadata__
+            body, tools, files, google_search, __metadata__, __user__
         )
 
         async def stream_generate(selected_model, request):
@@ -137,11 +138,14 @@ class Pipe:
         files: list,
         google_search: bool,
         metadata: Optional[dict],
+        user: Optional[dict],
     ) -> Dict[str, Any]:
         contents = []
         system_parts = []
         max_inline_bytes = self.valves.MAX_INLINE_MEDIA_MB * 1024 * 1024
-        file_parts, inline_bytes = await uploaded_file_parts(files, max_inline_bytes)
+        file_parts, inline_bytes = await uploaded_file_parts(
+            files, max_inline_bytes, user
+        )
         messages = body.get("messages", [])
         if file_parts:
             messages = restore_pre_source_messages(messages, metadata)
