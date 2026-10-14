@@ -39,14 +39,14 @@ class RecordingAgentPlatformClient:
         self.requests = []
 
     async def stream_generate(
-        self, model, payload, *, api_key, base_url, timeout_seconds
+        self, model, payload, *, api_key, model_base_url, timeout_seconds
     ):
         self.requests.append(
             {
                 "model": model,
                 "payload": copy.deepcopy(payload),
                 "api_key": api_key,
-                "base_url": base_url,
+                "model_base_url": model_base_url,
                 "timeout_seconds": timeout_seconds,
             }
         )

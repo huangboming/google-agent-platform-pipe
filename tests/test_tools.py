@@ -1,3 +1,5 @@
+import pytest
+
 from tests.helpers import text_response
 
 
@@ -41,7 +43,8 @@ async def test_preserves_reusable_tool_schema_definitions(make_pipe):
     }
 
 
-async def test_executes_tool_and_continues_the_model_turn(make_pipe):
+@pytest.mark.parametrize("location", ["", "global", "us-central1"])
+async def test_executes_tool_and_continues_the_model_turn(make_pipe, location):
     tool_call_response = {
         "candidates": [
             {
@@ -83,6 +86,8 @@ async def test_executes_tool_and_continues_the_model_turn(make_pipe):
             ],
         ]
     )
+    pipe.valves.PROJECT_ID = "test-project" if location else ""
+    pipe.valves.LOCATION = location
     calls = []
     statuses = []
 
@@ -124,6 +129,8 @@ async def test_executes_tool_and_continues_the_model_turn(make_pipe):
     assert calls == ["Paris"]
     assert [event["data"]["done"] for event in statuses] == [False, True]
 
+    assert len(client.requests) == 2
+    assert client.requests[0]["model_base_url"] == client.requests[1]["model_base_url"]
     follow_up = client.requests[1]["payload"]
     model_part = follow_up["contents"][-2]["parts"][0]
     assert model_part["thoughtSignature"] == "signature"

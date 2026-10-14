@@ -12,7 +12,7 @@ It provides streaming, multimodal input, and native Open WebUI tool calling as a
 - Gemini-native Google Search with citations and Search Suggestions
 - Collapsible Gemini thought summaries and token-usage reporting
 - Per-request reasoning effort with a configurable thinking-level default
-- Agent Platform API-key authentication
+- Express and Full Agent Platform API-key authentication
 
 ## Quick start
 
@@ -26,7 +26,7 @@ You need a [Google Agent Platform API key](https://docs.cloud.google.com/gemini-
    ```
 
 3. Save and enable the Function.
-4. Set its `GOOGLE_API_KEY` Valve.
+4. Set its `GOOGLE_API_KEY` Valve. For Full Agent Platform, also set `PROJECT_ID` and `LOCATION`.
 5. Start a chat with a model under `Google/`.
 
 Alternatively, download `google_agent_platform.py` from the [latest Release](https://github.com/huangboming/google-agent-platform-pipe/releases/latest) and import it manually.
@@ -46,15 +46,26 @@ The Pipe uses explicit model IDs because Google's `*-latest` selectors can retur
 | Valve | Default | Description |
 | --- | --- | --- |
 | `GOOGLE_API_KEY` | — | Agent Platform API key; required |
+| `PROJECT_ID` | Empty | Google Cloud project ID for Full Agent Platform; set together with `LOCATION` |
+| `LOCATION` | Empty | `global` or a region such as `us-central1`; set together with `PROJECT_ID` |
 | `MODELS` | See above | Comma-separated model IDs exposed in Open WebUI |
 | `INCLUDE_THOUGHTS` | `true` | Show available thought summaries in Open WebUI |
 | `THINKING_LEVEL` | Empty | Default `MINIMAL`, `LOW`, `MEDIUM`, or `HIGH` when the request does not set `reasoning_effort` |
 | `MAX_TOOL_ITERATIONS` | `8` | Maximum model/tool round trips |
 | `REQUEST_TIMEOUT_SECONDS` | `300` | Upstream request timeout |
 | `MAX_INLINE_MEDIA_MB` | `18` | Total decoded inline-media limit per request |
-| `API_BASE_URL` | `https://aiplatform.googleapis.com` | Agent Platform API endpoint |
+| `API_BASE_URL` | `https://aiplatform.googleapis.com` | Automatically selects the Google endpoint for the configured location; use a custom URL for a proxy |
 
 Google exposes thought summaries rather than a model's raw chain of thought, and only when available. Open WebUI stores returned summaries in the chat history. Open WebUI's per-request `reasoning_effort` parameter takes precedence over the `THINKING_LEVEL` Valve. Reported token usage includes all internal model calls made during a multi-turn tool loop.
+
+### Express and Full Agent Platform
+
+- **Express**: leave both `PROJECT_ID` and `LOCATION` empty and use your Express API key. Existing configurations continue to work.
+- **Full Agent Platform**: set both fields and use a [standard-project API key bound to a service account](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/start/api-keys?usertype=standard). Enable billing and the Agent Platform API in the project, and authorize the bound service account to use it.
+
+Both fields must be set together; setting only one returns a configuration error. `LOCATION` can be `global` or a supported region. Model availability depends on the selected project and location.
+
+The default `API_BASE_URL` selects `aiplatform.googleapis.com` for Express and Full global requests, or `LOCATION-aiplatform.googleapis.com` for Full regional requests. A custom URL is used as configured in either mode.
 
 ## Tool execution
 

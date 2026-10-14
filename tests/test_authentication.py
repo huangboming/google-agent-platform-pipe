@@ -7,9 +7,35 @@ import pytest
 from tests.helpers import text_response
 
 
+@pytest.mark.parametrize(
+    ("project_id", "location", "expected_url"),
+    [
+        (
+            "",
+            "",
+            "https://aiplatform.googleapis.com/v1/publishers/google/models/"
+            "gemini-3.8-flash:streamGenerateContent?alt=sse",
+        ),
+        (
+            "test-project",
+            "global",
+            "https://aiplatform.googleapis.com/v1/projects/test-project/"
+            "locations/global/publishers/google/models/"
+            "gemini-3.8-flash:streamGenerateContent?alt=sse",
+        ),
+        (
+            "test-project",
+            "us-central1",
+            "https://us-central1-aiplatform.googleapis.com/v1/projects/test-project/"
+            "locations/us-central1/publishers/google/models/"
+            "gemini-3.8-flash:streamGenerateContent?alt=sse",
+        ),
+    ],
+    ids=["express", "full-global", "full-regional"],
+)
 @pytest.mark.parametrize("stream", [False, True])
 async def test_authenticates_without_exposing_api_key_in_urls_or_logs(
-    pipe_class, monkeypatch, caplog, stream
+    pipe_class, monkeypatch, caplog, stream, project_id, location, expected_url
 ):
     api_key = "test-key-not-for-urls"
     requests = []
@@ -32,6 +58,8 @@ async def test_authenticates_without_exposing_api_key_in_urls_or_logs(
     pipe = pipe_class()
     pipe.valves.GOOGLE_API_KEY = api_key
     pipe.valves.API_BASE_URL = "https://aiplatform.googleapis.com"
+    pipe.valves.PROJECT_ID = project_id
+    pipe.valves.LOCATION = location
     pipe.valves.MODELS = "gemini-3.8-flash"
 
     output = await pipe.pipe(
@@ -53,11 +81,12 @@ async def test_authenticates_without_exposing_api_key_in_urls_or_logs(
     assert len(requests) == 1
     request = requests[0]
     assert request.method == "POST"
-    assert str(request.url) == (
-        "https://aiplatform.googleapis.com/v1/publishers/google/models/"
-        "gemini-3.8-flash:streamGenerateContent?alt=sse"
-    )
+    assert str(request.url) == expected_url
     assert request.headers["x-goog-api-key"] == api_key
+    assert "authorization" not in request.headers
+    assert json.loads(request.content)["contents"] == [
+        {"role": "user", "parts": [{"text": "Hi"}]}
+    ]
 
     log_messages = [
         record.getMessage() for record in caplog.records if record.name == "httpx"

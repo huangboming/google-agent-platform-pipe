@@ -5,8 +5,31 @@ import pytest
 from tests.helpers import text_response
 
 
-async def test_sends_multimodal_messages_parameters_and_tools(make_pipe):
+@pytest.mark.parametrize(
+    ("project_id", "location", "expected_base_url"),
+    [
+        ("", "", "https://aiplatform.googleapis.com/v1/publishers/google/models"),
+        (
+            "test-project",
+            "global",
+            "https://aiplatform.googleapis.com/v1/projects/test-project/"
+            "locations/global/publishers/google/models",
+        ),
+        (
+            "test-project",
+            "us-central1",
+            "https://us-central1-aiplatform.googleapis.com/v1/projects/test-project/"
+            "locations/us-central1/publishers/google/models",
+        ),
+    ],
+    ids=["express", "full-global", "full-regional"],
+)
+async def test_sends_multimodal_messages_parameters_and_tools(
+    make_pipe, project_id, location, expected_base_url
+):
     pipe, client = make_pipe([[text_response("A small image.")]])
+    pipe.valves.PROJECT_ID = project_id
+    pipe.valves.LOCATION = location
     image = base64.b64encode(b"image bytes").decode()
 
     async def weather(city):
@@ -52,7 +75,7 @@ async def test_sends_multimodal_messages_parameters_and_tools(make_pipe):
     assert result["choices"][0]["message"]["content"] == "A small image."
     request = client.requests[0]
     assert request["model"] == "gemini-3.8-flash"
-    assert request["base_url"] == "https://aiplatform.googleapis.com"
+    assert request["model_base_url"] == expected_base_url
     payload = request["payload"]
     assert payload["systemInstruction"]["parts"] == [{"text": "Be concise."}]
     assert payload["contents"][0]["parts"][1]["inlineData"]["data"] == image

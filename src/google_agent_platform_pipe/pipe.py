@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from .agent import run_agent
-from .client import AgentPlatformClient
+from .client import AgentPlatformClient, resolve_model_base_url
 from .config import Valves
 from .files import ensure_media_limit, has_uploaded_files, uploaded_file_parts
 from .messages import (
@@ -102,6 +102,9 @@ class Pipe:
     ):
         if not self.valves.GOOGLE_API_KEY.strip():
             raise ValueError("Google Agent Platform API key is not configured.")
+        model_base_url = resolve_model_base_url(
+            self.valves.API_BASE_URL, self.valves.PROJECT_ID, self.valves.LOCATION
+        )
 
         google_search = native_google_search_enabled(__metadata__, __task__)
         files = [] if __task__ else (__files__ or [])
@@ -119,7 +122,7 @@ class Pipe:
                 selected_model,
                 request,
                 api_key=self.valves.GOOGLE_API_KEY,
-                base_url=self.valves.API_BASE_URL,
+                model_base_url=model_base_url,
                 timeout_seconds=self.valves.REQUEST_TIMEOUT_SECONDS,
             ):
                 yield response

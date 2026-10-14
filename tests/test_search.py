@@ -1,7 +1,8 @@
 import pytest
 
 
-async def test_uses_native_google_search_and_emits_grounding(make_pipe):
+@pytest.mark.parametrize("location", ["", "global", "us-central1"])
+async def test_uses_native_google_search_and_emits_grounding(make_pipe, location):
     response = {
         "candidates": [
             {
@@ -32,6 +33,8 @@ async def test_uses_native_google_search_and_emits_grounding(make_pipe):
         ]
     }
     pipe, client = make_pipe([[response]])
+    pipe.valves.PROJECT_ID = "test-project" if location else ""
+    pipe.valves.LOCATION = location
     events = []
 
     async def emit(event):

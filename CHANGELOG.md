@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Support Full Agent Platform API-key requests with explicit `PROJECT_ID` and `LOCATION`, while preserving Express mode when both are empty.
+- Automatically select Google global or regional endpoints for the configured location, with custom `API_BASE_URL` overrides preserved.
+
 ## [0.4.2] - 2026-10-13
 
 ### Fixed

@@ -2,6 +2,8 @@ import os
 
 from pydantic import BaseModel, Field
 
+DEFAULT_API_BASE_URL = "https://aiplatform.googleapis.com"
+
 
 class Valves(BaseModel):
     GOOGLE_API_KEY: str = Field(
@@ -9,9 +11,20 @@ class Valves(BaseModel):
         description="Agent Platform API key.",
         json_schema_extra={"input_type": "password"},
     )
+    PROJECT_ID: str = Field(
+        default="",
+        description="Google Cloud project ID for Full Agent Platform; set with LOCATION.",
+    )
+    LOCATION: str = Field(
+        default="",
+        description="Full Agent Platform location: global or a region; set with PROJECT_ID.",
+    )
     API_BASE_URL: str = Field(
-        default="https://aiplatform.googleapis.com",
-        description="Google Agent Platform API base URL.",
+        default=DEFAULT_API_BASE_URL,
+        description=(
+            "Google Agent Platform API base URL. The default selects the Google "
+            "endpoint for LOCATION automatically; a custom URL overrides the host."
+        ),
     )
     MODELS: str = Field(
         default=("gemini-3.8-flash,gemini-3.5-flash-lite,gemini-3.1-pro-preview"),
