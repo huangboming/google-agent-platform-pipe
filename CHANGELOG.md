@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-14
+
 ### Added
 
 - Support Full Agent Platform API-key requests with explicit `PROJECT_ID` and `LOCATION`, while preserving Express mode when both are empty.
@@ -41,6 +43,7 @@ Initial public release.
 - Preserve references and definitions in complex tool schemas.
 - Prevent files, Search, and tools from leaking into Open WebUI internal tasks.
 
-[Unreleased]: https://github.com/huangboming/google-agent-platform-pipe/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/huangboming/google-agent-platform-pipe/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/huangboming/google-agent-platform-pipe/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/huangboming/google-agent-platform-pipe/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/huangboming/google-agent-platform-pipe/releases/tag/v0.4.1
